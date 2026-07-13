@@ -1,16 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { validatePassword, validateEmail } from '../utils/validators'
 
 const steps = ['Tu rol', 'Datos personales', 'Tus mascotas', 'Verificación']
-
-const petTypes = [
-  { emoji: '🐶', label: 'Perro', value: 'DOG' },
-  { emoji: '🐱', label: 'Gato', value: 'CAT' },
-  { emoji: '🐰', label: 'Conejo', value: 'RABBIT' },
-  { emoji: '🦜', label: 'Ave', value: 'BIRD' },
-  { emoji: '🐾', label: 'Otro', value: 'OTHER' },
-]
 
 const Register = () => {
   const { register } = useAuth()
@@ -33,16 +26,34 @@ const Register = () => {
 
   const handleSubmit = async () => {
     setError('')
+
+    if (!form.fullName.trim()) {
+      setError('El nombre es requerido')
+      return
+    }
+
+    if (!validateEmail(form.email)) {
+      setError('El correo electrónico no es válido')
+      return
+    }
+
+    const passwordErrors = validatePassword(form.password)
+    if (passwordErrors.length > 0) {
+      setError(passwordErrors.join(', '))
+      return
+    }
+
     if (form.password !== form.confirmPassword) {
       setError('Las contraseñas no coinciden')
       return
     }
+
     setLoading(true)
     try {
       await register({
         fullName: form.fullName,
         email: form.email,
-        phone: form.phone,
+        phone: '+57' + form.phone,
         password: form.password,
         role
       })
@@ -52,6 +63,29 @@ const Register = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const passwordRules = [
+    { test: form.password.length >= 8, label: 'Mínimo 8 caracteres' },
+    { test: /[A-Z]/.test(form.password), label: 'Al menos una mayúscula' },
+    { test: /[0-9]/.test(form.password), label: 'Al menos un número' },
+    { test: /[!@#$%^&*(),.?":{}|<>]/.test(form.password), label: 'Al menos un carácter especial' },
+  ]
+
+  const passwordStrength = passwordRules.filter(r => r.test).length
+
+  const strengthColor = () => {
+    if (passwordStrength <= 1) return '#ef4444'
+    if (passwordStrength <= 2) return '#f97316'
+    if (passwordStrength <= 3) return '#eab308'
+    return '#10b981'
+  }
+
+  const strengthLabel = () => {
+    if (passwordStrength <= 1) return 'Muy débil'
+    if (passwordStrength <= 2) return 'Débil'
+    if (passwordStrength <= 3) return 'Buena'
+    return 'Muy segura'
   }
 
   return (
@@ -87,7 +121,6 @@ const Register = () => {
               : 'Cuida mascotas desde tu hogar y genera ingresos flexibles cada semana.'}
           </p>
 
-          {/* Progreso */}
           <p className="text-xs font-medium mb-2 flex justify-between" style={{ color: 'var(--text-muted)' }}>
             <span>Progreso del registro</span>
             <span>Paso {step} de {steps.length}</span>
@@ -98,7 +131,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Steps */}
           <div className="space-y-3">
             {steps.map((s, i) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-xl"
@@ -132,7 +164,7 @@ const Register = () => {
       <div className="flex-1 flex items-center justify-center px-16">
         <div className="w-full max-w-xl">
 
-          {/* Step 1: Rol */}
+          {/* Step 1 */}
           {step === 1 && (
             <div>
               <h3 className="text-3xl font-bold text-white mb-2">Elige tu rol 🎯</h3>
@@ -167,19 +199,23 @@ const Register = () => {
                 style={{ backgroundColor: 'var(--accent-purple)', color: 'white' }}>
                 Continuar →
               </button>
+              <p className="text-center text-xs mt-4" style={{ color: 'var(--text-muted)' }}>
+                ¿Ya tienes cuenta?{' '}
+                <Link to="/login" style={{ color: 'var(--accent-purple-light)' }}>Inicia sesión aquí</Link>
+              </p>
             </div>
           )}
 
-          {/* Step 2: Datos personales */}
+          {/* Step 2 */}
           {step === 2 && (
             <div>
               <h3 className="text-3xl font-bold text-white mb-2">Cuéntanos sobre ti 🙋</h3>
-              <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
                 Completa tu perfil para que los cuidadores puedan conocerte
               </p>
 
               {error && (
-                <div className="mb-6 p-3 rounded-lg text-sm"
+                <div className="mb-4 p-3 rounded-lg text-sm"
                   style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>
                   {error}
                 </div>
@@ -189,16 +225,24 @@ const Register = () => {
                 <div>
                   <label className="block text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>NOMBRE COMPLETO</label>
                   <input name="fullName" value={form.fullName} onChange={handleChange}
-                    placeholder="Ingresa tu nombre"
-                    className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+                    placeholder="Tu nombre completo"
+                    className="w-full px-4 py-3 rounded-xl text-sm outline-none"
                     style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white' }} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>TELÉFONO</label>
-                  <input name="phone" value={form.phone} onChange={handleChange}
-                    placeholder="+57 310 000 0000"
-                    className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-                    style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white' }} />
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pr-2"
+                      style={{ borderRight: '1px solid var(--border)' }}>
+                      <span className="text-sm">🇨🇴</span>
+                      <span className="text-sm font-medium text-white">+57</span>
+                    </div>
+                    <input name="phone" value={form.phone} onChange={handleChange}
+                      placeholder="3100000000"
+                      maxLength={10}
+                      className="w-full pl-20 pr-4 py-3 rounded-xl text-sm outline-none"
+                      style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white' }} />
+                  </div>
                 </div>
               </div>
 
@@ -210,7 +254,7 @@ const Register = () => {
                   style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white' }} />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="grid grid-cols-2 gap-4 mb-2">
                 <div>
                   <label className="block text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>CONTRASEÑA</label>
                   <input name="password" type="password" value={form.password} onChange={handleChange}
@@ -224,13 +268,51 @@ const Register = () => {
                     placeholder="Repite tu contraseña"
                     className="w-full px-4 py-3 rounded-xl text-sm outline-none"
                     style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', color: 'white' }} />
+                  {form.confirmPassword && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs" style={{ color: form.password === form.confirmPassword ? 'var(--accent-green)' : '#f87171' }}>
+                        {form.password === form.confirmPassword ? '✓' : '✗'}
+                      </span>
+                      <span className="text-xs" style={{ color: form.password === form.confirmPassword ? 'var(--accent-green)' : '#f87171' }}>
+                        {form.password === form.confirmPassword ? 'Coinciden' : 'No coinciden'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {form.password && (
+                <div className="mb-4 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Fortaleza de la contraseña</span>
+                    <span className="text-xs font-medium" style={{ color: strengthColor() }}>{strengthLabel()}</span>
+                  </div>
+                  <div className="flex gap-1 mb-3">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="flex-1 h-1 rounded-full transition-all"
+                        style={{ backgroundColor: i <= passwordStrength ? strengthColor() : 'var(--border)' }}>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {passwordRules.map((rule, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-xs" style={{ color: rule.test ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                          {rule.test ? '✓' : '○'}
+                        </span>
+                        <span className="text-xs" style={{ color: rule.test ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                          {rule.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <button onClick={handleSubmit} disabled={loading}
                 className="w-full py-3 rounded-xl font-medium text-sm transition hover:opacity-90 disabled:opacity-50 mb-3"
                 style={{ backgroundColor: 'var(--accent-purple)', color: 'white' }}>
-                {loading ? 'Creando cuenta...' : 'Continuar →'}
+                {loading ? 'Creando cuenta...' : 'Crear cuenta →'}
               </button>
               <button onClick={() => setStep(1)}
                 className="w-full py-3 rounded-xl text-sm transition"
@@ -244,19 +326,22 @@ const Register = () => {
             </div>
           )}
 
-          {/* Steps 3 y 4 próximamente */}
+          {/* Step 3 y 4 */}
           {step >= 3 && (
             <div className="text-center">
-              <p className="text-4xl mb-4">🎉</p>
-              <h3 className="text-2xl font-bold text-white mb-2">¡Casi listo!</h3>
-              <p style={{ color: 'var(--text-secondary)' }}>Completa tu perfil desde el dashboard.</p>
-              <button onClick={handleSubmit}
-                className="mt-6 px-8 py-3 rounded-xl font-medium text-sm transition hover:opacity-90"
+              <p className="text-6xl mb-6">🎉</p>
+              <h3 className="text-2xl font-bold text-white mb-2">¡Cuenta creada!</h3>
+              <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>
+                Bienvenido a AirbnPets. Completa tu perfil desde el dashboard.
+              </p>
+              <button onClick={() => navigate(role === 'CAREGIVER' ? '/caregiver-profile' : '/dashboard')}
+                className="px-8 py-3 rounded-xl font-medium text-sm transition hover:opacity-90"
                 style={{ backgroundColor: 'var(--accent-purple)', color: 'white' }}>
                 Ir al dashboard →
               </button>
             </div>
           )}
+
         </div>
       </div>
     </div>

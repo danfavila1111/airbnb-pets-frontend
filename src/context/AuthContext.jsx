@@ -38,14 +38,20 @@ export const AuthProvider = ({ children }) => {
     return res.data.user
   }
 
-  const logout = () => {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    setUser(null)
+const logout = () => {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  setUser(null)
+  window.history.pushState(null, '', '/login')
+  window.onpopstate = () => {
+    window.history.pushState(null, '', '/login')
   }
+}
+
+const isAuthenticated = !!user
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, isAuthenticated }}>
       {!loading && children}
     </AuthContext.Provider>
   )

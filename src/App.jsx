@@ -11,13 +11,22 @@ import CaregiverDetail from './pages/CaregiverDetail'
 import MyPets from './pages/MyPets'
 import MyBookings from './pages/MyBookings'
 import CaregiverProfile from './pages/CaregiverProfile'
+import PublicRoute from './components/PublicRoute'
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={
+      <PublicRoute>
+        <Login />
+      </PublicRoute>
+        } />
+    <Route path="/register" element={
+      <PublicRoute>
+        <Register />
+      </PublicRoute>
+} />
       <Route path="/caregivers" element={<Caregivers />} />
       <Route path="/caregivers/:id" element={<CaregiverDetail />} />
 
